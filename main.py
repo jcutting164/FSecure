@@ -3,27 +3,29 @@
 # Dependent on Path.py (OOP usage to manage pathway data)
 # Goal: Reach the end of the minefield... only one path needs to arrive!
 #       Give output as a single string inputted into their site within 7 seconds
+# Current Expected Output:
+#       The minefield in 0s and Xs. 0s are blank and Xs are bombs
+#       The successful path as a correctly formatted string
+#       The html code of the response from our guess
 from lxml import html
 import requests
 import time
 from array import *
 
 
+# Defines a Path object to be used later on
+# Paths keep track of their position in the maze, their route, and previouos stops
+
 class Path:
 
-    # instance attributes
     def __init__(self, currentx, currenty, pathway, prevspaces):
         self.pathway = pathway
         self.currentx = currentx
         self.currenty = currenty
         self.prevspaces = prevspaces
 
-    def moveSpace(self, space, movement):
-        self.currentx = space[0]
-        self.currenty = space[1]
-        self.prevspaces.append(space)
-        self.pathway += movement
 
+# canMove determines if a path could be
 
 def canMove(mazestartx, mazestarty, mazegoalx, mazegoaly, newx, newy, prevspaces):
     newspace = [newx, newy]
@@ -34,26 +36,29 @@ def main():
     # testing performance
     t0 = time.time()
 
-
     mazesizex = 22
     mazesizey = 22
     mazestartx = 0
     mazestarty = 0
     mazegoalx = 21
     mazegoaly = 21
+    # Creation of the Paths coordinate grid to keep track of all Path objects
+
+    paths = []
 
     maze = []
     bombloc = []
 
-    successfulpath=""
+    successfulpath = ""
 
-    # The following creates a session on the site, gets the html table data, and then converts it into a 1D array
+    # The following creates a PERSISTANT session on the site, gets the html table data, and then converts it into a
+    # 1D array
     s = requests.Session()
-    # This line actually creates the session where we take the html code to be formatted
+    # This line makes the intitial request so we can get the minefield
     page = s.post('https://pg-0451682683.fs-playground.com/#')
-    # This line actually does the submission of your predicted answer... this is to be used!!
-    # answerresponse = s.post('https://pg-0451682683.fs-playground.com/Solution/Submit?solution=UU')
 
+    # These lines convert the html into a tree and then finds the html table
+    # The html table is sorted and every "full" or "empty" value is extracted from every "<td>" tag
     tree = html.fromstring(page.content)
     slots = tree.xpath('//td/@class')
 
@@ -66,25 +71,20 @@ def main():
 
     # prints out the maze... lookin decent =D
 
-
-    for x in range(0,len(maze)):
-        for y in range(0,len(maze)):
-            if(maze[x][y]=="empty"):
-                print("0 ",end='')
+    for x in range(0, len(maze)):
+        for y in range(0, len(maze)):
+            if (maze[x][y] == "empty"):
+                print("0 ", end='')
             else:
-                print("X ",end='')
+                print("X ", end='')
         print(" ")
 
     # creates list of locations where bombs exist... intend to use this to simplify elimination by bomb later on
     for x in range(mazestartx, mazesizex):
         for y in range(mazestarty, mazesizey):
-            if(maze[x][y] == "full"):
+            if maze[x][y] == "full":
                 loc = [x, y]
                 bombloc.append(loc)
-
-    # Creation of the Paths coordinate grid to keep track of all Path objects
-
-    paths = []
 
     # Creation of the original path starting at point 0,0
     firstpath = Path(mazestartx, mazestarty, "", [])
@@ -148,8 +148,6 @@ def main():
                 temppath = Path(path.currentx, path.currenty + 1, temppathway, tempprevspaces)
                 newpaths.append(temppath)
 
-
-
         # flushes old paths and then inserts new paths
         paths.clear()
         for path in newpaths:
@@ -171,40 +169,37 @@ def main():
                         newpaths.append(path)
                         break
 
-        # cycles newpaths back into paths again... TODO: make it a function... repeat code bad... non essential
+        # cycles newpaths back into paths again
         paths.clear()
         for path in newpaths:
             paths.append(path)
-            #(str(path.currentx)+" : "+str(path.currenty))
+            # (str(path.currentx)+" : "+str(path.currenty))
         newpaths.clear()
 
-
-
         # Check for success from paths
+        # NOTE: only ONE path needs to be successful for a win!
 
         for path in paths:
             if path.currentx == mazegoalx and path.currenty == mazegoaly:
                 successfulpath = path.pathway
-                successful=True
+                successful = True
                 break
-        #print("unsuccessful")
-        #print(len(paths))
-    # finally out of the checking loop... time to report results and submit!
 
-    print("successful path: "+successfulpath)
+    # reporting results
+    print("successful path: " + successfulpath)
 
-    #submitting the pathway found:
-    url='https://pg-0451682683.fs-playground.com/Solution/Submit?solution='+successfulpath
-    print(url)
+    # submitting the pathway found:
+    # notice request is made with the "s" Session object made earlier... we have to do that so the session is
+    # persistent and the maze we initialized still is being used
+    url = 'https://pg-0451682683.fs-playground.com/Solution/Submit?solution=' + successfulpath
     answerresponse = s.post(url)
+    # prints out the html code of the response website... inspecting this shows if we win or not
     print(answerresponse.text)
 
     # end time
     t1 = time.time()
-    print("Time taken: "+str(t1-t0))
+    print("Time taken: " + str(t1 - t0))
 
 
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     main()
