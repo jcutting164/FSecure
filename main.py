@@ -1,6 +1,5 @@
 # Minefield Problem main
 # Written by: Joshua Cutting
-# Dependent on Path.py (OOP usage to manage pathway data)
 # Goal: Reach the end of the minefield... only one path needs to arrive!
 #       Give output as a single string inputted into their site within 7 seconds
 # Current Expected Output:
